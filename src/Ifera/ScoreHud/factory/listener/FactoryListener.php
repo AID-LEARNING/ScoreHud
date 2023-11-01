@@ -16,8 +16,10 @@ use pocketmine\event\player\PlayerItemHeldEvent;
 use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\event\player\PlayerMoveEvent;
 use pocketmine\event\player\PlayerQuitEvent;
+use pocketmine\item\VanillaItems;
 use pocketmine\player\Player;
 use pocketmine\scheduler\ClosureTask;
+use pocketmine\world\format\io\GlobalItemDataHandlers;
 use function count;
 
 class FactoryListener implements Listener {
@@ -46,21 +48,24 @@ class FactoryListener implements Listener {
 		}), 20);
 	}
 
-	public function onDamage(EntityDamageEvent $event) {
+	public function onDamage(EntityDamageEvent $event): void
+    {
 		$player = $event->getEntity();
 		if (!$player instanceof Player) return;
 		(new PlayerTagUpdateEvent($player, new ScoreTag("scorehud.health", (string) ((int) $player->getHealth()))))->call();
 		(new PlayerTagUpdateEvent($player, new ScoreTag("scorehud.max_health", (string) $player->getMaxHealth())))->call();
 	}
 
-	public function onRegainHealth(EntityRegainHealthEvent $event) {
+	public function onRegainHealth(EntityRegainHealthEvent $event): void
+    {
 		$player = $event->getEntity();
 		if (!$player instanceof Player) return;
 		(new PlayerTagUpdateEvent($player, new ScoreTag("scorehud.health", (string) ((int) $player->getHealth()))))->call();
 		(new PlayerTagUpdateEvent($player, new ScoreTag("scorehud.max_health", (string) $player->getMaxHealth())))->call();
 	}
 
-	public function onExperienceChange(PlayerExperienceChangeEvent $event) {
+	public function onExperienceChange(PlayerExperienceChangeEvent $event): void
+    {
 		$player = $event->getEntity();
 		if (!$player instanceof Player) return;
 		(new PlayerTagUpdateEvent($player, new ScoreTag("scorehud.xp_level", (string) ((int) $player->getXpManager()->getXpLevel()))))->call();
@@ -69,7 +74,8 @@ class FactoryListener implements Listener {
 		(new PlayerTagUpdateEvent($player, new ScoreTag("scorehud.xp_current_total", (string) ((int) $player->getXpManager()->getCurrentTotalXp()))))->call();
 	}
 
-	public function onMove(PlayerMoveEvent $event) {
+	public function onMove(PlayerMoveEvent $event): void
+    {
 		$fX = (int) $event->getFrom()->getX();
 		$fY = (int) $event->getFrom()->getY();
 		$fZ = (int) $event->getFrom()->getZ();
@@ -85,7 +91,8 @@ class FactoryListener implements Listener {
 		(new PlayerTagUpdateEvent($player, new ScoreTag("scorehud.z", (string) ((int) $player->getPosition()->getZ()))))->call();
 	}
 
-	public function onTeleport(EntityTeleportEvent $event) {
+	public function onTeleport(EntityTeleportEvent $event): void
+    {
 		$player = $event->getEntity();
 		$target = $event->getTo()->getWorld();
         $prevWorld = $event->getFrom()->getWorld();
@@ -116,12 +123,14 @@ class FactoryListener implements Listener {
 		(new PlayerTagUpdateEvent($player, new ScoreTag("scorehud.world_folder_name", $target->getFolderName())))->call();
 	}
 
-	public function onItemHeld(PlayerItemHeldEvent $event) {
+	public function onItemHeld(PlayerItemHeldEvent $event): void
+    {
 		$player = $event->getPlayer();
 		$item = $event->getItem();
+        $serialize = GlobalItemDataHandlers::getSerializer()->serializeType(($item->equals(VanillaItems::AIR()) ? $item->setCount(1) : $item));
 		(new PlayerTagUpdateEvent($player, new ScoreTag("scorehud.item_name", $item->getName())))->call();
-		(new PlayerTagUpdateEvent($player, new ScoreTag("scorehud.item_id", (string) $item->getId())))->call();
-		(new PlayerTagUpdateEvent($player, new ScoreTag("scorehud.item_meta", (string) $item->getMeta())))->call();
-		(new PlayerTagUpdateEvent($player, new ScoreTag("scorehud.item_count", (string) $item->getCount())))->call();
+		(new PlayerTagUpdateEvent($player, new ScoreTag("scorehud.item_id", $serialize->getName())))->call();
+		(new PlayerTagUpdateEvent($player, new ScoreTag("scorehud.item_meta", strval($serialize->getMeta()))))->call();
+		(new PlayerTagUpdateEvent($player, new ScoreTag("scorehud.item_count", strval($item->getCount()))))->call();
 	}
 }
